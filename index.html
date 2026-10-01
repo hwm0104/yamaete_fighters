@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<title>야매떼 파이터들</title>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+
+<style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent
+}
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#0a0e18;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif
+}
+body{touch-action:none}
+button,input{font:inherit}
+#app{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center
+}
+.screen{
+  width:min(1100px,100%);
+  height:min(760px,100%);
+  position:relative;
+  display:none
+}
+.screen.active{display:flex}
+
+#lobby{
+  flex-direction:column;
+  overflow:auto;
+  padding:18px 14px 26px;
+  background:radial-gradient(circle at 50% 0,#1e2c55 0,#0a0e18 58%)
+}
+.logo{
+  font-weight:1000;
+  font-size:clamp(30px,6vw,62px);
+  letter-spacing:-3px;
+  text-align:center;
+  margin:4px 0 6px
+}
+.subtitle{
+  opacity:.72;
+  text-align:center;
+  margin-bottom:18px
+}
+.panel{
+  width:min(880px,100%);
+  margin:0 auto 14px;
+  background:rgba(21,28,47,.92);
+  border:1px solid #33405f;
+  border-radius:18px;
+  padding:14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.26)
+}
+.panel h2{
+  margin:0 0 10px;
+  font-size:18px
+}
+.row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center
+}
+input{
+  background:#0d1323;
+  border:1px solid #3a486b;
+  color:#fff;
+  border-radius:12px;
+  padding:12px 14px;
+  min-width:160px;
+  outline:none
+}
+.btn{
+  border:0;
+  border-radius:12px;
+  padding:11px 15px;
+  font-weight:900;
+  background:#273653;
+  color:#fff;
+  cursor:pointer;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.25);
+  user-select:none
+}
+.btn:active{
+  transform:translateY(1px);
+  filter:brightness(.9)
+}
+.btn.primary{background:#7c5cff}
+.btn.good{background:#16a34a}
+.btn.warn{background:#ea580c}
+.btn:disabled{
+  opacity:.4;
+  cursor:not-allowed
+}
+.status{
+  font-size:13px;
+  opacity:.8;
+  min-height:18px;
+  margin-top:8px;
+  white-space:pre-wrap
+}
+.selects{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px
+}
+@media(max-width:760px){
+  .selects{grid-template-columns:1fr}
+}
+.playerCard{
+  background:#101728;
+  border:1px solid #303d5b;
+  border-radius:16px;
+  padding:12px
+}
+.playerTitle{
+  font-weight:1000;
+  margin-bottom:8px
+}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px
+}
+.char{
+  position:relative;
+  background:#18223a;
+  border:2px solid transparent;
+  border-radius:14px;
+  padding:8px;
+  cursor:pointer;
+  min-width:0;
+  color:#fff
+}
+.char.selected{
+  border-color:#a78bfa;
+  box-shadow:0 0 0 2px rgba(167,139,250,.17)
+}
+.char img{
+  width:100%;
+  height:120px;
+  object-fit:contain;
+  background:#0c1220;
+  border-radius:10px;
+  display:block
+}
+.char .name{
+  font-weight:1000;
+  margin-top:6px;
+  font-size:14px
+}
+.char .stats{
+  font-size:11px;
+  opacity:.72;
+  line-height:1.35;
+  margin-top:2px
+}
+.readyDot{
+  position:absolute;
+  top:7px;
+  right:7px;
+  background:#16a34a;
+  border-radius:99px;
+  padding:2px 6px;
+  font-size:10px;
+  font-weight:900;
+  display:none
+}
+.char.selected .readyDot{display:block}
+.controlsHelp{
+  font-size:12px;
+  opacity:.7;
+  line-height:1.5
+}
+
+#game{
+  background:#0b0f19;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden
+}
+#arenaWrap{
+  position:relative;
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(#10182a,#08101d)
+}
+canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  background:linear-gradient(#182f48,#0e1e2e);
+  touch-action:none
+}
+.hud{
+  position:absolute;
+  top:10px;
+  left:10px;
+  right:10px;
+  display:flex;
+  gap:10px;
+  justify-content:space-between;
+  pointer-events:none
+}
+.half{
+  width:44%;
+  min-width:0
+}
+.hpBox{
+  background:rgba(5,8,14,.72);
+  border:1px solid #4c5b79;
+  border-radius:12px;
+  padding:7px 9px
+}
+.hpTop{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  font-weight:1000;
+  margin-bottom:5px
+}
+.hpbar{
+  height:14px;
+  background:#20283a;
+  border-radius:999px;
+  overflow:hidden
+}
+.hpfill{
+  height:100%;
+  width:100%;
+  background:#32d06d;
+  transition:width .14s linear
+}
+.p2 .hpfill{background:#ff5c79}
+.cooldowns{
+  display:flex;
+  gap:6px;
+  margin-top:6px
+}
+.cd{
+  background:rgba(5,8,14,.72);
+  border:1px solid #4c5b79;
+  border-radius:9px;
+  padding:4px 7px;
+  font-size:10px;
+  font-weight:900
+}
+#centerMsg{
+  position:absolute;
+  left:50%;
+  top:18%;
+  transform:translateX(-50%);
+  font-size:clamp(24px,7vw,54px);
+  font-weight:1000;
+  text-align:center;
+  text-shadow:0 4px 20px #000;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .15s;
+  white-space:nowrap
+}
+#roomBadge{
+  position:absolute;
+  top:92px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.45);
+  padding:5px 10px;
+  border-radius:99px;
+  font-size:11px;
+  pointer-events:none
+}
+#backBtn{
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  z-index:20
+}
+.touch{
+  position:absolute;
+  bottom:12px;
+  left:12px;
+  right:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  pointer-events:none
+}
+.dpad{
+  width:148px;
+  height:148px;
+  position:relative;
+  pointer-events:auto;
+  opacity:.9
+}
+.dpad button{
+  position:absolute;
+  width:48px;
+  height:48px;
+  border:1px solid #6d7ea4;
+  background:rgba(15,22,38,.82);
+  color:#fff;
+  border-radius:12px;
+  font-weight:1000;
+  font-size:19px;
+  touch-action:none;
+  user-select:none
+}
+.dpad .up{
+  left:50px;
+  top:0
+}
+.dpad .down{
+  left:50px;
+  bottom:0
+}
+.dpad .left{
+  left:0;
+  top:50px
+}
+.dpad .right{
+  right:0;
+  top:50px
+}
+.attackBtns{
+  display:flex;
+  gap:10px;
+  pointer-events:auto
+}
+.attack{
+  width:84px;
+  height:84px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.45);
+  color:#fff;
+  font-weight:1000;
+  background:#2c3b5e;
+  box-shadow:0 7px 20px rgba(0,0,0,.3);
+  touch-action:none;
+  user-select:none
+}
+.attack.basic{background:#2563eb}
+.attack.ult{background:#b026d9}
+.attack:active{
+  transform:scale(.94)
+}
+.attack.flash{
+  animation:attackFlash .28s ease-out
+}
+@keyframes attackFlash{
+  0%{
+    transform:scale(1);
+    filter:brightness(1)
+  }
+  35%{
+    transform:scale(1.16);
+    filter:brightness(1.8)
+  }
+  100%{
+    transform:scale(1);
+    filter:brightness(1)
+  }
+}
+@media(min-width:900px){
+  .touch{display:none}
+}
+#mobileHint{
+  position:absolute;
+  bottom:6px;
+  left:50%;
+  transform:translateX(-50%);
+  font-size:10px;
+  opacity:.45;
+  pointer-events:none
+}
+#gameOver{
+  position:absolute;
+  inset:0;
+  background:rgba(3,6,12,.68);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:30
+}
+#gameOver.show{display:flex}
+.overBox{
+  background:#11182a;
+  border:1px solid #586a91;
+  border-radius:20px;
+  padding:24px;
+  text-align:center;
+  min-width:260px;
+  box-shadow:0 20px 70px rgba(0,0,0,.5)
+}
+.overBox h2{
+  margin:0 0 6px;
+  font-size:34px
+}
+.overBox p{
+  margin:0 0 16px;
+  opacity:.78
+}
+.toast{
+  position:absolute;
+  bottom:110px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.72);
+  padding:7px 11px;
+  border-radius:10px;
+  font-size:12px;
+  opacity:0;
+  transition:opacity .15s;
+  pointer-events:none;
+  z-index:15
+}
+.toast.show{opacity:1}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<section id="lobby" class="screen active">
+
+<div class="logo">야매떼 파이터들</div>
+<div class="subtitle">빠른 이동 + 실시간 1 vs 1 온라인 아레나</div>
+
+<div class="panel">
+<h2>① 온라인 방</h2>
+
+<div class="row">
+<button id="createBtn" class="btn primary" type="button">방 만들기</button>
+
+<input
+id="roomCode"
+maxlength="6"
+placeholder="친구 방 코드"
+autocomplete="off"
+spellcheck="false">
+
+<button id="joinBtn" class="btn good" type="button">방 참가</button>
+<button id="copyBtn" class="btn" type="button">초대 링크 복사</button>
+</div>
+
+<div class="status" id="netStatus">온라인 준비 중…</div>
+</div>
+
+<div class="panel">
+
+<h2>② 캐릭터 선택</h2>
+
+<div class="selects">
+
+<div class="playerCard">
+
+<div class="playerTitle">P1 / 나</div>
+
+<div class="cards" id="p1cards"></div>
+
+<div class="status" id="p1Status">
+캐릭터를 선택하세요.
+</div>
+
+</div>
+
+<div class="playerCard">
+
+<div class="playerTitle">P2 / 친구</div>
+
+<div class="cards" id="p2cards"></div>
+
+<div class="status" id="p2Status">
+친구가 선택할 수 있어요.
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="panel">
+
+<div class="row">
+
+<button id="startBtn" class="btn primary" type="button" disabled>
+전투 시작
+</button>
+
+<button id="testBtn" class="btn warn" type="button">
+혼자 테스트
+</button>
+
+<button id="resetBtn" class="btn" type="button">
+처음부터
+</button>
+
+</div>
+
+<div class="controlsHelp">
+PC: WASD/방향키 이동 · 마우스 좌클릭 기본기 · F 궁극기 ·
+모바일: 방향 버튼 + 기술 버튼
+</div>
+
+</div>
+
+</section>
+
+
+<section id="game" class="screen">
+
+<div id="arenaWrap">
+
+<canvas id="arena"></canvas>
+
+<div class="hud">
+
+<div class="half">
+
+<div class="hpBox">
+
+<div class="hpTop">
+<span id="p1name">P1</span>
+<span id="p1hptext">0/0</span>
+</div>
+
+<div class="hpbar">
+<div id="p1fill" class="hpfill"></div>
+</div>
+
+<div id="p1cd" class="cooldowns"></div>
+
+</div>
+
+</div>
+
+
+<div class="half">
+
+<div class="hpBox">
+
+<div class="hpTop">
+<span id="p2name">P2</span>
+<span id="p2hptext">0/0</span>
+</div>
+
+<div class="hpbar">
+<div id="p2fill" class="hpfill"></div>
+</div>
+
+<div id="p2cd" class="cooldowns"></div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div id="roomBadge"></div>
+<div id="centerMsg"></div>
+
+<div id="mobileHint">
+화면 아래 버튼으로 이동/공격
+</div>
+
+
+<div class="touch">
+
+<div class="dpad">
+
+<button type="button" class="up" data-key="up">▲</button>
+<button type="button" class="left" data-key="left">◀</button>
+<button type="button" class="right" data-key="right">▶</button>
+<button type="button" class="down" data-key="down">▼</button>
+
+</div>
+
+
+<div class="attackBtns">
+
+<button id="basicBtn" type="button" class="attack basic">
+기본기
+</button>
+
+<button id="ultBtn" type="button" class="attack ult">
+궁극기
+</button>
+
+</div>
+
+</div>
+
+
+<button id="backBtn" type="button" class="btn">
+로비
+</button>
+
+
+<div id="toast" class="toast"></div>
+
+
+<div id="gameOver">
+
+<div class="overBox">
+
+<h2 id="winnerText">
+승리!
+</h2>
+
+<p id="overSub">
+전투 종료
+</p>
+
+<button id="againBtn" type="button" class="btn primary">
+다시 하기
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   캐릭터 이미지
+========================================================= */
+
+const IMG = {
+  "꼬미": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAgEASABIAAD/4QDKRXhpZgAATU0AKgAAAAgABgESAAMAAAABAAEAAAEaAAUAAAABAAAAVgEbAAUAAAABAAAAXgEoAAMAAAABAAIAAAITAAMAAAABAAEAAIdpAAQAAAABAAAAZgAAAAAAAABIAAAAAQAAAEgAAAABAAeQAAAHAAAABDAyMjGRAQAHAAAABAECAwCgAAAHAAAABDAxMDCgAQADAAAAAQABAACgAgAEAAAAAQAABICgAwAEAAAAAQAABgCkBgADAAAAAQAAAAAAAAAAAAD/4gIoSUNDX1BST0ZJTEUAAQEAAAIYYXBwbAQAAABtbnRyUkdCIFhZWiAH5gABAAEAAAAAAABhY3NwQVBQTAAAAABBUFBMAAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWFwcGwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAApkZXNjAAAA/AAAADBjcHJ0AAABLAAAAFB3dHB0AAABfAAAABRyWFlaAAABkAAAABRnWFlaAAABpAAAABRiWFlaAAABuAAAABRyVFJDAAABzAAAACBjaGFkAAAB7AAAACxiVFJDAAABzAAAACBnVFJDAAABzAAAACBtbHVjAAAAAAAAAAEAAAAMZW5VUwAAABQAAAAcAEQAaQBzAHAAbABhAHkAIABQADNtbHVjAAAAAAAAAAEAAAAMZW5VUwAAADQAAAAcAEMAbwBwAHkAcgBpAGcAaAB0ACAAQQB"
+};
+
+
+/* =========================================================
+   여기 아래부터는 기존 게임의 캐릭터/게임 로직
+========================================================= */
+
+const qs = id => document.getElementById(id);
+
+const canvas = qs("arena");
+const ctx = canvas.getContext("2d");
+
+let W = 1000;
+let H = 620;
+
+let raf = 0;
+let last = performance.now();
+
+let world = null;
+let projectiles = [];
+let fx = [];
+
+let keys = {
+  up:false,
+  down:false,
+  left:false,
+  right:false
+};
+
+let state = {
+  host:true,
+  solo:false,
+  running:false,
+  p1:"꼬미",
+  p2:"홍우주",
+  online:false
+};
+
+let netClock = 0;
+
+
+/* =========================================================
+   캐릭터 설정
+========================================================= */
+
+const CHARS = {
+
+"꼬미":{
+  color:"#ff8fb3",
+  maxHp:120,
+  speed:300,
+  basic:"돌진",
+  ult:"필살기",
+  basicCd:650,
+  ultCd:4200,
+  basicDmg:14,
+  ultDmg:42,
+  ultRange:300
+},
+
+"홍우주":{
+  color:"#ff4da6",
+  maxHp:105,
+  speed:330,
+  basic:"야매떼",
+  ult:"자기야 빔",
+  basicCd:700,
+  ultCd:4500,
+
+  /* 기본 공격 데미지 */
+  basicDmg:10,
+
+  /* 필살기 데미지 낮춤 */
+  ultDmg:24,
+
+  /* 필살기 범위 넓힘 */
+  ultRange:760
+},
+
+"지한서":{
+  color:"#ffd166",
+  maxHp:135,
+  speed:275,
+  basic:"과자 휘두르기",
+  ult:"과자 폭발",
+  basicCd:800,
+  ultCd:5000,
+
+  /* 기본 공격 데미지 낮춤 */
+  basicDmg:11,
+
+  ultDmg:38,
+  ultRange:380
+}
+
+};
+
+
+/* =========================================================
+   캐릭터 이름
+========================================================= */
+
+const names = Object.keys(CHARS);
+
+
+/* =========================================================
+   이미지 캐시
+========================================================= */
+
+const imgCache = {};
+
+for(const n of names){
+
+  imgCache[n] = new Image();
+
+  if(IMG[n]){
+    imgCache[n].src = IMG[n];
+  }
+
+}
+
+
+/* =========================================================
+   플레이어 생성
+========================================================= */
+
+function makePlayer(side,char){
+
+  const c = CHARS[char];
+
+  return {
+    side,
+    char,
+
+    x:side===1 ? 180 : 820,
+    y:310,
+
+    dir:side===1 ? 1 : -1,
+
+    hp:c.maxHp,
+    maxHp:c.maxHp,
+
+    speed:c.speed,
+
+    input:{
+      up:false,
+      down:false,
+      left:false,
+      right:false
+    },
+
+    lastBasic:-999999,
+    lastUlt:-999999,
+
+    inv:0,
+    hitFlash:0,
+
+    anim:"",
+    animUntil:0,
+
+    /* 승리 축하 모션 */
+    celebrate:false
+  };
+}
+
+
+/* =========================================================
+   게임 시작
+========================================================= */
+
+function startGame(){
+
+  world = {
+
+    time:0,
+
+    /* 시작 카운트다운 */
+    countdown:3200,
+
+    ended:false,
+    winner:0,
+
+    p1:makePlayer(1,state.p1),
+    p2:makePlayer(2,state.p2)
+  };
+
+  projectiles=[];
+  fx=[];
+
+  state.running=true;
+
+  qs("game").classList.add("active");
+  qs("lobby").classList.remove("active");
+
+  qs("gameOver").classList.remove("show");
+
+  startCountdown();
+
+}
+
+
+/* =========================================================
+   3 → 2 → 1 → FIGHT
+========================================================= */
+
+function startCountdown(){
+
+  const msg = qs("centerMsg");
+
+  msg.style.opacity="1";
+
+  msg.textContent="3";
+
+  setTimeout(()=>{
+    if(!world || world.ended)return;
+    msg.textContent="2";
+  },800);
+
+  setTimeout(()=>{
+    if(!world || world.ended)return;
+    msg.textContent="1";
+  },1600);
+
+  setTimeout(()=>{
+    if(!world || world.ended)return;
+
+    msg.textContent="FIGHT!";
+
+    setTimeout(()=>{
+      if(!world || world.ended)return;
+      msg.style.opacity="0";
+    },500);
+
+  },2400);
+
+}
+
+
+/* =========================================================
+   이동
+========================================================= */
+
+function move(p,dt){
+
+  let dx=0;
+  let dy=0;
+
+  if(p.input.left)dx--;
+  if(p.input.right)dx++;
+  if(p.input.up)dy--;
+  if(p.input.down)dy++;
+
+  if(dx||dy){
+
+    const len=Math.hypot(dx,dy);
+
+    dx/=len;
+    dy/=len;
+
+    p.x += dx*p.speed*dt/1000;
+    p.y += dy*p.speed*dt/1000;
+
+    if(dx!==0){
+      p.dir=dx>0?1:-1;
+    }
+
+  }
+
+  p.x=Math.max(70,Math.min(930,p.x));
+  p.y=Math.max(90,Math.min(540,p.y));
+
+}
+
+
+/* =========================================================
+   거리
+========================================================= */
+
+function distance(a,b){
+
+  return Math.hypot(
+    a.x-b.x,
+    a.y-b.y
+  );
+
+}
+
+
+/* =========================================================
+   쿨다운
+========================================================= */
+
+function canUse(p,kind){
+
+  const c=CHARS[p.char];
+
+  if(kind==="basic"){
+    return world.time-p.lastBasic >= c.basicCd;
+  }
+
+  return world.time-p.lastUlt >= c.ultCd;
+}
+
+
+/* =========================================================
+   공격
+========================================================= */
+
+function resolveAttack(side,kind){
+
+  if(!world || world.ended)return;
+
+  /* 카운트다운 중 공격 금지 */
+  if(world.countdown>0)return;
+
+  const p=side===1?world.p1:world.p2;
+  const enemy=side===1?world.p2:world.p1;
+
+  if(!canUse(p,kind))return;
+
+  const c=CHARS[p.char];
+
+  if(kind==="basic"){
+
+    p.lastBasic=world.time;
+
+    /* =========================
+       꼬미 기본기 - 이동 돌진
+    ========================= */
+
+    if(p.char==="꼬미"){
+
+      p.anim="dash";
+      p.animUntil=world.time+300;
+
+      const oldX=p.x;
+
+      p.x += p.dir*120;
+
+      p.x=Math.max(70,Math.min(930,p.x));
+
+      fx.push({
+        type:"dash",
+        x:p.x,
+        y:p.y,
+        life:300,
+        dir:p.dir
+      });
+
+      if(distance(p,enemy)<120){
+
+        enemy.hp-=c.basicDmg;
+
+        enemy.hitFlash=180;
+
+        fx.push({
+          type:"hit",
+          x:enemy.x,
+          y:enemy.y,
+          life:220
+        });
+
+      }
+
+      return;
+    }
+
+
+    /* =========================
+       홍우주 기본기
+       1초 동안 유도
+    ========================= */
+
+    if(p.char==="홍우주"){
+
+      p.anim="talk";
+      p.animUntil=world.time+450;
+
+      projectiles.push({
+
+        owner:side,
+
+        x:p.x+p.dir*40,
+        y:p.y,
+
+        vx:p.dir*720,
+        vy:0,
+
+        life:1000,
+
+        dmg:c.basicDmg,
+
+        type:"word",
+
+        text:"야매떼",
+
+        /* 유도 활성화 */
+        homing:true,
+
+        /* 정확히 최대 1초 */
+        homingUntil:world.time+1000
+
+      });
+
+      return;
+    }
+
+
+    /* =========================
+       지한서 기본기
+       과자는 일반공격할 때만
+    ========================= */
+
+    if(p.char==="지한서"){
+
+      p.anim="snack";
+      p.animUntil=world.time+400;
+
+      fx.push({
+        type:"snack",
+        x:p.x,
+        y:p.y,
+        life:420,
+        dir:p.dir
+      });
+
+      if(distance(p,enemy)<130){
+
+        enemy.hp-=c.basicDmg;
+
+        enemy.hitFlash=180;
+
+        fx.push({
+          type:"hit",
+          x:enemy.x,
+          y:enemy.y,
+          life:220
+        });
+
+      }
+
+      return;
+    }
+
+  }
+
+
+  /* =====================================================
+     필살기
+  ===================================================== */
+
+  if(kind==="ult"){
+
+    p.lastUlt=world.time;
+
+
+    /* =========================
+       꼬미 필살기
+       이동 모션
+    ========================= */
+
+    if(p.char==="꼬미"){
+
+      p.anim="dash";
+      p.animUntil=world.time+700;
+
+      const startX=p.x;
+
+      p.x += p.dir*250;
+
+      p.x=Math.max(70,Math.min(930,p.x));
+
+      fx.push({
+        type:"dash",
+        x:p.x,
+        y:p.y,
+        life:700,
+        dir:p.dir
+      });
+
+      if(distance(p,enemy)<c.ultRange){
+
+        enemy.hp-=c.ultDmg;
+
+        enemy.hitFlash=300;
+
+        fx.push({
+          type:"hit",
+          x:enemy.x,
+          y:enemy.y,
+          life:300
+        });
+
+      }
+
+      return;
+    }
+
+
+    /* =========================
+       홍우주 필살기
+       자기야 나랑 사귀자 빔!!!
+    ========================= */
+
+    if(p.char==="홍우주"){
+
+      p.anim="talk";
+      p.animUntil=world.time+1000;
+
+      const dx=enemy.x-p.x;
+
+      const inRange =
+        Math.abs(dx)<=c.ultRange &&
+        Math.abs(enemy.y-p.y)<100;
+
+      if(inRange){
+
+        enemy.hp-=c.ultDmg;
+
+        enemy.hitFlash=400;
+
+      }
+
+      fx.push({
+
+        type:"beam",
+
+        x:p.x,
+        y:p.y,
+
+        dir:p.dir,
+
+        life:1000,
+
+        text:"자기야 나랑 사귀자 빔!!!"
+
+      });
+
+      return;
+    }
+
+
+    /* =========================
+       지한서 필살기
+    ========================= */
+
+    if(p.char==="지한서"){
+
+      p.anim="bite";
+      p.animUntil=world.time+800;
+
+      fx.push({
+        type:"party",
+        x:p.x,
+        y:p.y,
+        life:1000
+      });
+
+      if(distance(p,enemy)<c.ultRange){
+
+        enemy.hp-=c.ultDmg;
+
+        enemy.hitFlash=350;
+
+      }
+
+      return;
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   투사체 처리
+========================================================= */
+
+function stepProjectiles(dt){
+
+  for(let i=projectiles.length-1;i>=0;i--){
+
+    const q=projectiles[i];
+
+    const target =
+      q.owner===1
+      ? world.p2
+      : world.p1;
+
+
+    /* =========================
+       홍우주 1초 유도
+    ========================= */
+
+    if(
+      q.homing &&
+      world.time<=q.homingUntil
+    ){
+
+      const dx=target.x-q.x;
+      const dy=target.y-q.y;
+
+      const len=Math.hypot(dx,dy)||1;
+
+      const speed=Math.hypot(q.vx,q.vy)||720;
+
+      const desiredX=dx/len*speed;
+      const desiredY=dy/len*speed;
+
+      /* 부드럽게 방향 전환 */
+      q.vx += (desiredX-q.vx)*0.18;
+      q.vy += (desiredY-q.vy)*0.18;
+
+    }
+
+
+    q.x += q.vx*dt/1000;
+    q.y += q.vy*dt/1000;
+
+    q.life-=dt;
+
+
+    if(
+      distance(q,target)<45
+    ){
+
+      target.hp-=q.dmg;
+
+      target.hitFlash=180;
+
+      fx.push({
+        type:"hit",
+        x:target.x,
+        y:target.y,
+        life:220
+      });
+
+      projectiles.splice(i,1);
+
+      continue;
+    }
+
+
+    if(
+      q.life<=0 ||
+      q.x<0 ||
+      q.x>1000 ||
+      q.y<0 ||
+      q.y>620
+    ){
+
+      projectiles.splice(i,1);
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   FX
+========================================================= */
+
+function stepFX(dt){
+
+  for(let i=fx.length-1;i>=0;i--){
+
+    fx[i].life-=dt;
+
+    if(fx[i].life<=0){
+      fx.splice(i,1);
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   AI
+========================================================= */
+
+function ai(){
+
+  const a=world.p2;
+  const b=world.p1;
+
+  const d=distance(a,b);
+
+  const dx=b.x-a.x;
+  const dy=b.y-a.y;
+
+  const danger=projectiles.some(q=>
+    q.owner===1 &&
+    Math.abs(q.y-a.y)<60 &&
+    Math.abs(q.x-a.x)<220
+  );
+
+  const strafe=Math.sin(world.time/260)>0;
+
+  a.input={
+    up:danger?dy<0:(Math.abs(dy)>45&&dy<0),
+    down:danger?dy>=0:(Math.abs(dy)>45&&dy>0),
+
+    left:
+      danger
+      ?(strafe?dx<0:true)
+      :d>150
